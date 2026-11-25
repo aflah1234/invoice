@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Invoice - Royal Sulthan</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <!-- Controls (hidden on print) -->
+  <div class="no-print controls">
+    <button class="btn-add" onclick="addRow()">➕ Add Item</button>
+    <button class="btn-print" onclick="window.print()">🖨️ Print Invoice</button>
+  </div>
+
+  <div class="invoice-wrapper">
+
+    <!-- HEADER -->
+    <header class="invoice-header">
+      <div class="brand">
+        <div class="brand-info">
+          <h1 class="brand-name">Royal Sulthan</h1>
+          <p class="brand-tagline">Elegance Beyond Measure</p>
+        </div>
+      </div>
+      <div class="invoice-meta">
+        <h2 class="invoice-title">INVOICE</h2>
+        <table class="meta-table">
+          <tr>
+            <td>Invoice No:</td>
+            <td><strong contenteditable="true" spellcheck="false" id="invoice-no">#RS-2026-001</strong></td>
+          </tr>
+          <tr>
+            <td>Date:</td>
+            <td contenteditable="true" spellcheck="false" id="invoice-date"></td>
+          </tr>
+          <tr>
+            <td>Due Date:</td>
+            <td contenteditable="true" spellcheck="false" id="due-date"></td>
+          </tr>
+        </table>
+      </div>
+    </header>
+
+    <div class="divider"></div>
+
+    <!-- BILL FROM / TO -->
+    <section class="parties">
+      <div class="party from">
+        <h3>FROM</h3>
+        <p class="name" contenteditable="true" spellcheck="false">Royal Sulthan</p>
+        <p contenteditable="true" spellcheck="false">123 Palace Street</p>
+        <p contenteditable="true" spellcheck="false">Chennai, Tamil Nadu 600001</p>
+        <p contenteditable="true" spellcheck="false">📧 billing@royalsulthan.com</p>
+        <p contenteditable="true" spellcheck="false">📞 +91 98765 43210</p>
+      </div>
+      <div class="party to">
+        <h3>BILL TO</h3>
+        <p class="name" contenteditable="true" spellcheck="false">Customer Name</p>
+        <p contenteditable="true" spellcheck="false">Address Line 1</p>
+        <p contenteditable="true" spellcheck="false">City, State PIN</p>
+        <p contenteditable="true" spellcheck="false">📧 customer@email.com</p>
+        <p contenteditable="true" spellcheck="false">📞 +91 00000 00000</p>
+      </div>
+    </section>
+
+    <!-- ITEMS TABLE -->
+    <section class="items-section">
+      <table class="items-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Item Description</th>
+            <th>Qty</th>
+            <th>Unit Price (₹)</th>
+            <th>Total (₹)</th>
+            <th class="no-print">Remove</th>
+          </tr>
+        </thead>
+        <tbody id="items-body">
+          <!-- Rows added by JS -->
+        </tbody>
+      </table>
+    </section>
+
+    <!-- TOTALS -->
+    <section class="totals-section">
+      <div class="totals-box">
+        <div class="total-row">
+          <span>Subtotal</span>
+          <span id="subtotal">₹0</span>
+        </div>
+        <div class="total-row">
+          <span>
+            GST
+            <input class="rate-input no-print" id="gst-rate" type="number" value="18" min="0" max="100" onchange="recalculate()" />
+            <span class="print-only" id="gst-rate-label">18</span>%
+          </span>
+          <span id="gst-amount">₹0</span>
+        </div>
+        <div class="total-row discount">
+          <span>
+            Discount
+            <input class="rate-input no-print" id="discount-rate" type="number" value="0" min="0" max="100" onchange="recalculate()" />
+            <span class="print-only" id="discount-rate-label">0</span>%
+          </span>
+          <span id="discount-amount">- ₹0</span>
+        </div>
+        <div class="total-row grand">
+          <span>♛ GRAND TOTAL</span>
+          <span id="grand-total">₹0</span>
+        </div>
+      </div>
+    </section>
+
+      <div class="notes">
+        <h3>Notes</h3>
+        <p>Thank you for choosing Royal Sulthan! Payment is due within 10 days. We appreciate your royal patronage.</p>
+      </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="invoice-footer">
+      <div class="footer-brand">Royal Sulthan</div>
+      <p>www.royalsulthan.com &nbsp;|&nbsp; billing@royalsulthan.com &nbsp;|&nbsp; +91 98765 43210</p>
+      <p class="footer-note">This is a computer-generated invoice. No signature required.</p>
+    </footer>
+
+  </div>
+
+  <script>
+    // ── Set today's date and due date ──────────────────────────────
+    (function () {
+      const now = new Date();
+      const due = new Date();
+      due.setDate(due.getDate() + 10);
+      const fmt = d => d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+      document.getElementById('invoice-date').textContent = fmt(now);
+      document.getElementById('due-date').textContent = fmt(due);
+    })();
+
+    let rowCount = 0;
+
+    // ── Add a new editable row ─────────────────────────────────────
+    function addRow() {
+      rowCount++;
+      const tbody = document.getElementById('items-body');
+      const tr = document.createElement('tr');
+      tr.id = 'row-' + rowCount;
+      tr.innerHTML = `
+        <td class="row-num">${rowCount}</td>
+        <td><input type="text" class="inp-item" placeholder="Item description" oninput="recalculate()" /></td>
+        <td><input type="number" class="inp-qty" placeholder="1" min="1" value="1" oninput="recalculate()" /></td>
+        <td><input type="number" class="inp-price" placeholder="0.00" min="0" value="" oninput="recalculate()" /></td>
+        <td class="row-total">₹0</td>
+        <td class="no-print"><button class="btn-remove" onclick="removeRow('row-${rowCount}')">✕</button></td>
+      `;
+      tbody.appendChild(tr);
+      tr.querySelector('.inp-item').focus();
+      recalculate();
+    }
+
+    // ── Remove a row ───────────────────────────────────────────────
+    function removeRow(id) {
+      const row = document.getElementById(id);
+      if (row) row.remove();
+      renumberRows();
+      recalculate();
+    }
+
+    // ── Renumber rows after deletion ───────────────────────────────
+    function renumberRows() {
+      const rows = document.querySelectorAll('#items-body tr');
+      rows.forEach((row, i) => {
+        const numCell = row.querySelector('.row-num');
+        if (numCell) numCell.textContent = i + 1;
+      });
+    }
+
+    // ── Recalculate all totals ─────────────────────────────────────
+    function recalculate() {
+      let subtotal = 0;
+      const rows = document.querySelectorAll('#items-body tr');
+
+      rows.forEach(row => {
+        const qty   = parseFloat(row.querySelector('.inp-qty')?.value)   || 0;
+        const price = parseFloat(row.querySelector('.inp-price')?.value) || 0;
+        const lineTotal = qty * price;
+        const totalCell = row.querySelector('.row-total');
+        if (totalCell) totalCell.textContent = '₹' + fmt(lineTotal);
+        subtotal += lineTotal;
+      });
+
+      const gstRate      = parseFloat(document.getElementById('gst-rate').value)      || 0;
+      const discountRate = parseFloat(document.getElementById('discount-rate').value) || 0;
+
+      const gstAmount      = subtotal * gstRate / 100;
+      const discountAmount = subtotal * discountRate / 100;
+      const grandTotal     = subtotal + gstAmount - discountAmount;
+
+      document.getElementById('subtotal').textContent        = '₹' + fmt(subtotal);
+      document.getElementById('gst-amount').textContent      = '₹' + fmt(gstAmount);
+      document.getElementById('discount-amount').textContent = '- ₹' + fmt(discountAmount);
+      document.getElementById('grand-total').textContent     = '₹' + fmt(grandTotal);
+
+      // sync print-only labels
+      document.getElementById('gst-rate-label').textContent      = gstRate;
+      document.getElementById('discount-rate-label').textContent  = discountRate;
+    }
+
+    // ── Number formatter ──────────────────────────────────────────
+    function fmt(n) {
+      return n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    // Start with 3 blank rows
+    addRow(); addRow(); addRow();
+  </script>
+
+</body>
+</html>
